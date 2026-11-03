@@ -1,0 +1,13 @@
+magpie-agent-purge
+==================
+
+这是 agent-purge 的 magpie 网关插件集成。
+
+设计参考并改编自 ZiChuanLan/agent-purge 的 magpie-plugin：
+
+  https://github.com/ZiChuanLan/agent-purge/tree/main/magpie-plugin
+
+上游以 MIT 许可发布，版权归 ZiChuanLan 所有。本仓库保留其 MIT 许可与版权
+声明，并在网关 hook 的协议落点（anthropic / chat / responses / gemini）、
+人设读取方式（~/.agent-purge/state.json 与 personas/<id>.md）和 magpie 页面
+桥接方式上延续其设计。hooks.js、页面与测试为本仓库重新实现。

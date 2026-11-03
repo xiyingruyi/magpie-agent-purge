@@ -1,0 +1,53 @@
+{
+  "name": "magpie-agent-purge",
+  "version": "0.1.0",
+  "description": "magpie gateway hook: rewrite the system prompt of every proxied agent request with an agent-purge persona",
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "files": [
+    "hooks.js",
+    "icon.svg",
+    "page",
+    "scripts",
+    "README.md",
+    "LICENSE",
+    "NOTICE"
+  ],
+  "keywords": [
+    "magpie",
+    "magpie-plugin",
+    "agent-purge",
+    "persona",
+    "gateway-hook",
+    "system-prompt"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/xiyingruyi/magpie-agent-purge.git"
+  },
+  "bugs": {
+    "url": "https://github.com/xiyingruyi/magpie-agent-purge/issues"
+  },
+  "homepage": "https://github.com/xiyingruyi/magpie-agent-purge#readme",
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "gen:personas": "node scripts/gen-personas.mjs",
+    "check": "node --check hooks.js && node --check page/app.js && node --check scripts/gen-personas.mjs"
+  },
+  "magpie": {
+    "hooks": "./hooks.js",
+    "page": {
+      "title": "Persona",
+      "titles": {
+        "zh": "人设",
+        "en": "Persona",
+        "ja": "ペルソナ"
+      },
+      "file": "page/index.html"
+    },
+    "iconUrl": "https://raw.githubusercontent.com/xiyingruyi/magpie-agent-purge/main/icon.svg"
+  }
+}

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img" aria-label="magpie-agent-purge">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2F6F5E"/>
+      <stop offset="1" stop-color="#7FC9B2"/>
+    </linearGradient>
+  </defs>
+  <rect width="128" height="128" rx="28" fill="url(#g)"/>
+  <path d="M64 24c-16 0-29 12-31 28-1 9 2 17 8 23l-7 23c-1 4 3 7 6 5l17-9c2 1 5 1 7 1s5 0 7-1l17 9c3 2 7-1 6-5l-7-23c6-6 9-14 8-23-2-16-15-28-31-28z" fill="#F6F6F4"/>
+  <circle cx="52" cy="58" r="5" fill="#2F6F5E"/>
+  <circle cx="76" cy="58" r="5" fill="#2F6F5E"/>
+  <path d="M52 74c4 4 8 6 12 6s8-2 12-6" fill="none" stroke="#2F6F5E" stroke-width="4" stroke-linecap="round"/>
+</svg>

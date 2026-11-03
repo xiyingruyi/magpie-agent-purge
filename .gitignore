@@ -1,0 +1,6 @@
+node_modules/
+.DS_Store
+*.log
+
+# gen:personas 的产物会被提交为空清单；本地生成后不要提交用户的人设目录
+page/personas.local.js
