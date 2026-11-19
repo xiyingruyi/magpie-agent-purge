@@ -45,6 +45,7 @@ const IDS = [
 	"now-mode",
 	"mode",
 	"agents",
+	"disabledAgents",
 	"q",
 	"list",
 	"count",
@@ -154,6 +155,14 @@ nodes.agents.value = "claude, codex";
 nodes.agents.onchange({ target: { value: "claude, codex" } });
 await settle();
 ok(JSON.stringify(store.agents) === '["claude","codex"]', "agents 输入按逗号解析");
+
+// disabledAgents 输入解析
+nodes.disabledAgents.value = "codex trae";
+nodes.disabledAgents.onchange({ target: { value: "codex trae" } });
+await settle();
+ok(JSON.stringify(store.disabledAgents) === '["codex","trae"]', "disabledAgents 输入按空白解析");
+ok(JSON.stringify(store.agents) === '["claude","codex"]', "写入 disabledAgents 时 agents 不被写没");
+ok(nodes.disabledAgents.value === "codex, trae", "disabledAgents 回显为逗号分隔");
 
 // 导入 md
 nodes.body.value = "---\nname: Mine\n---\nSay only OK.";

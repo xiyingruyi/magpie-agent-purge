@@ -16,7 +16,7 @@
 	const $ = (id) => document.getElementById(id);
 
 	let base = {}; // 服务端已知的完整 options：页面不管的键原样带回去
-	let picked = { persona: "", mode: "", agents: [] };
+	let picked = { persona: "", mode: "", agents: [], disabledAgents: [] };
 	let focusedId = ""; // 重绘时把焦点还给同一个按钮
 	let sent = "";
 	let sending = false;
@@ -30,7 +30,7 @@
 		...fixed().map((p) => ({ ...p, imported: false })),
 	];
 	const nameOf = (id) => rows().find((p) => p.id === id)?.name || id;
-	const pickKey = () => JSON.stringify([picked.persona, picked.mode, picked.agents, inline()]);
+	const pickKey = () => JSON.stringify([picked.persona, picked.mode, picked.agents, picked.disabledAgents, inline()]);
 	const modeText = (mode) =>
 		mode === "" ? "跟随 state.json" : MODES.find(([value]) => value === mode)?.[1]?.split(" — ")[0] || mode;
 
@@ -44,7 +44,7 @@
 				? "正在保存…"
 				: `已保存：${picked.persona ? nameOf(picked.persona) : "跟随 state.json"} · ${modeText(picked.mode)}${
 						picked.agents.length ? ` · 仅 ${picked.agents.join(" / ")}` : ""
-					}`;
+					}${picked.disabledAgents.length ? ` · 排除 ${picked.disabledAgents.join(" / ")}` : ""}`;
 	}
 
 	function paint() {
@@ -52,6 +52,7 @@
 		$("now-mode").textContent = modeText(picked.mode);
 		$("mode").value = picked.mode;
 		$("agents").value = picked.agents.join(", ");
+		$("disabledAgents").value = picked.disabledAgents.join(", ");
 
 		const query = $("q").value.trim().toLowerCase();
 		const hits = rows().filter(
@@ -149,6 +150,7 @@
 					persona: picked.persona,
 					mode: picked.mode,
 					agents: picked.agents,
+					disabledAgents: picked.disabledAgents,
 				};
 				const wait = Math.max(0, RATE_MS + 50 - (Date.now() - lastAt));
 				if (wait) await new Promise((resolve) => setTimeout(resolve, wait));
@@ -164,6 +166,7 @@
 						persona: base.persona ?? "",
 						mode: base.mode ?? "",
 						agents: Array.isArray(base.agents) ? base.agents : [],
+						disabledAgents: Array.isArray(base.disabledAgents) ? base.disabledAgents : [],
 					};
 					paint();
 					return;
@@ -193,6 +196,9 @@
 		persona: typeof base.persona === "string" ? base.persona : "",
 		mode: typeof base.mode === "string" ? base.mode : "",
 		agents: Array.isArray(base.agents) ? base.agents.filter((a) => typeof a === "string") : [],
+		disabledAgents: Array.isArray(base.disabledAgents)
+			? base.disabledAgents.filter((a) => typeof a === "string")
+			: [],
 	};
 	sent = pickKey();
 	paint();
@@ -200,6 +206,8 @@
 	$("mode").onchange = (event) => save({ mode: event.target.value });
 	$("agents").onchange = (event) =>
 		save({ agents: event.target.value.split(/[\s,]+/).map((s) => s.trim()).filter(Boolean) });
+	$("disabledAgents").onchange = (event) =>
+		save({ disabledAgents: event.target.value.split(/[\s,]+/).map((s) => s.trim()).filter(Boolean) });
 	$("q").oninput = () => paint();
 
 	// —— 导入人设 md ——

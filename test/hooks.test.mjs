@@ -4,9 +4,10 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { after, beforeEach, describe, it } from "node:test";
 
-const { onRequest, purgeHome, stripIdentity, stripFrontmatter } = await import("../hooks.js");
+const { onRequest, purgeHome, resolvePersona, stripIdentity, stripFrontmatter } = await import("../hooks.js");
 
 const PERSONA = "Your name is Canary-9f3a. Be terse.";
+const OTHER = "Your name is Otter-1c7e. Answer in one line.";
 const HOST = "You are Claude, made by Anthropic.\nUse the Read tool before editing.";
 const STRIPPED = "Use the Read tool before editing.";
 
@@ -83,6 +84,27 @@ describe("protocol × mode", () => {
 			const before = JSON.stringify(body);
 			assert.equal(await onRequest(body, ctx(protocol, { agents: ["codex"] }, "claude")), undefined);
 			assert.equal(JSON.stringify(body), before);
+		});
+
+		it(`${protocol}: disabledAgents 排除的 agent 放行`, async () => {
+			const body = bodies[protocol]();
+			const before = JSON.stringify(body);
+			assert.equal(await onRequest(body, ctx(protocol, { disabledAgents: ["claude"] }, "claude")), undefined);
+			assert.equal(JSON.stringify(body), before);
+		});
+
+		it(`${protocol}: 同时命中 agents 与 disabledAgents 时按排除`, async () => {
+			const body = bodies[protocol]();
+			const before = JSON.stringify(body);
+			const options = { agents: ["claude"], disabledAgents: ["claude"] };
+			assert.equal(await onRequest(body, ctx(protocol, options, "claude")), undefined);
+			assert.equal(JSON.stringify(body), before);
+		});
+
+		it(`${protocol}: 不在 disabledAgents 里的 agent 照常改写`, async () => {
+			const body = bodies[protocol]();
+			await onRequest(body, ctx(protocol, { mode: "append", disabledAgents: ["codex"] }, "claude"));
+			assert.equal(systemOf[protocol](body), `${PERSONA}\n\n${HOST}`);
 		});
 	}
 });
@@ -190,5 +212,68 @@ describe("辅助函数", () => {
 	it("purgeHome 支持相对路径与默认值", () => {
 		assert.match(purgeHome(""), /\.agent-purge$/);
 		assert.equal(purgeHome("/tmp/x"), "/tmp/x");
+	});
+});
+describe("state.json 的停用与分家", () => {
+	// 宿主原样 = 这次请求没被人设改写
+	it("总暂停优先于 options.mode", async () => {
+		home = makeHome({ persona: "canary", default: { mode: "off" }, overrides: { claude: { mode: "append" } } });
+		const body = bodies.anthropic();
+		assert.equal(await onRequest(body, ctx("anthropic", { mode: "append" })), undefined);
+		assert.equal(systemOf.anthropic(body), HOST);
+		assert.equal(resolvePersona({ mode: "append" }, home, "claude").blockedBy, "global-pause");
+	});
+
+	it("这家自己 off 只放行这一家", async () => {
+		home = makeHome({ persona: "canary", default: { mode: "append" }, overrides: { claude: { mode: "off" } } });
+		const mine = bodies.anthropic();
+		assert.equal(await onRequest(mine, ctx("anthropic")), undefined);
+		assert.equal(systemOf.anthropic(mine), HOST);
+		assert.equal(resolvePersona({}, home, "claude").blockedBy, "harness-off");
+
+		const other = bodies.anthropic();
+		await onRequest(other, ctx("anthropic", {}, "codex"));
+		assert.equal(systemOf.anthropic(other), `${PERSONA}\n\n${HOST}`);
+	});
+
+	it("disabledHarnesses 停用名单只放行名单里的", async () => {
+		home = makeHome({ persona: "canary", default: { mode: "append" }, disabledHarnesses: ["claude"] });
+		const mine = bodies.anthropic();
+		assert.equal(await onRequest(mine, ctx("anthropic")), undefined);
+		assert.equal(systemOf.anthropic(mine), HOST);
+		assert.equal(resolvePersona({}, home, "claude").blockedBy, "harness-disabled");
+
+		const other = bodies.anthropic();
+		await onRequest(other, ctx("anthropic", {}, "codex"));
+		assert.equal(systemOf.anthropic(other), `${PERSONA}\n\n${HOST}`);
+	});
+
+	it("overrides 里可以给单家换人设与模式", async () => {
+		home = makeHome({ persona: "canary", default: { mode: "append" }, overrides: { claude: { persona: "other", mode: "strict" } } });
+		writeFileSync(join(home, "personas", "other.md"), OTHER);
+
+		const mine = bodies.anthropic();
+		await onRequest(mine, ctx("anthropic"));
+		assert.equal(systemOf.anthropic(mine), OTHER);
+
+		const other = bodies.anthropic();
+		await onRequest(other, ctx("anthropic", {}, "codex"));
+		assert.equal(systemOf.anthropic(other), `${PERSONA}\n\n${HOST}`);
+	});
+
+	it("options.persona 仍然压过 overrides", async () => {
+		home = makeHome({ persona: "canary", default: { mode: "append" }, overrides: { claude: { persona: "other" } } });
+		writeFileSync(join(home, "personas", "other.md"), OTHER);
+		const body = bodies.anthropic();
+		await onRequest(body, ctx("anthropic", { persona: "canary" }));
+		assert.equal(systemOf.anthropic(body), `${PERSONA}\n\n${HOST}`);
+	});
+
+	it("缺 default.mode 按 replace 兜底", async () => {
+		home = makeHome({ persona: "canary" });
+		assert.equal(resolvePersona({}, home, "claude").mode, "replace");
+		const body = bodies.anthropic();
+		await onRequest(body, ctx("anthropic"));
+		assert.equal(systemOf.anthropic(body), `${PERSONA}\n\n${STRIPPED}`);
 	});
 });

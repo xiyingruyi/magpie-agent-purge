@@ -33,6 +33,7 @@ magpie plugin options magpie-agent-purge '{"mode":"append","persona":"neutral","
 | `mode` | `off` / `strict` / `replace` / `append`；不给则跟随 `state.json` |
 | `persona` | 人设 id；不给则跟随 `state.json` 的 `persona` |
 | `agents` | 只对这些 magpie agent 生效，例如 `["claude","codex"]`；空数组 = 全部 |
+| `disabledAgents` | 排除这些 magpie agent，例如 `["claude"]`；优先级高于 `agents` |
 | `inlinePersonas` | 插件页导入的人设 `[{id,name,text}]`；与磁盘同名时以它为准 |
 
 ## 四种模式
@@ -51,9 +52,24 @@ magpie plugin options magpie-agent-purge '{"mode":"append","persona":"neutral","
 插件读 `~/.agent-purge/`（可用 `AGENT_PURGE_HOME` 改，相对路径按当前工作目录解析）：
 
 ```
-state.json            { "persona": "<id>", "default": { "mode": "append" } }
+state.json            { "persona": "<id>",
+                        "default": { "mode": "append" },
+                        "overrides": { "<agent>": { "mode": "append", "persona": "<id>" } },
+                        "disabledHarnesses": ["<agent>"] }
 personas/<id>.md      frontmatter + 正文；只有正文进 prompt
 ```
+
+`state.json` 跟 agent-purge 是同一份，所以 CLI 那边的开关这里立刻生效。人设与模式是「全局默认 + 单个 agent 的例外」叠出来的，而三种「停」优先于任何模式：
+
+| state.json | 效果 |
+|---|---|
+| `default.mode: "off"` | 总暂停：所有请求放行，插件页里的 `mode` 也顶不回来 |
+| `overrides.<agent>.mode: "off"` | 只停这一家 |
+| `disabledHarnesses: ["<agent>"]` | 只停名单里的 |
+| `overrides.<agent>.{persona,mode}` | 这一家换人设 / 换模式 |
+| 缺 `default.mode` | 按 `replace` 兜底 |
+
+插件页的 `persona` / `mode` 是「启用时的选择」：显式填了就压过 `overrides`，但停用状态仍然优先。
 
 人设示例：
 
