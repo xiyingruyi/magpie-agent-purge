@@ -23,11 +23,20 @@
 	let lastAt = 0;
 	let failed = "";
 
+	// 人设清单：仓库里带一份（personas.js，随插件更新走），本机可以再叠一份
+	// 不想进仓库的（personas.local.js）。同 id 以本地为准。
 	const fixed = () => (Array.isArray(window.PERSONAS) ? window.PERSONAS : []);
+	const localFixed = () => (Array.isArray(window.PERSONAS_LOCAL) ? window.PERSONAS_LOCAL : []);
+	const catalog = () => {
+		const out = new Map();
+		for (const p of fixed()) if (p && p.id) out.set(p.id, p);
+		for (const p of localFixed()) if (p && p.id) out.set(p.id, p);
+		return [...out.values()];
+	};
 	const inline = () => (Array.isArray(base.inlinePersonas) ? base.inlinePersonas : []);
 	const rows = () => [
 		...inline().map((p) => ({ id: p.id, name: p.name || p.id, description: "页面导入", imported: true })),
-		...fixed().map((p) => ({ ...p, imported: false })),
+		...catalog().map((p) => ({ ...p, imported: false })),
 	];
 	const nameOf = (id) => rows().find((p) => p.id === id)?.name || id;
 	const pickKey = () => JSON.stringify([picked.persona, picked.mode, picked.agents, picked.disabledAgents, inline()]);

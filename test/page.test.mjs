@@ -83,7 +83,11 @@ const PERSONAS = [
 	{ id: "terse", name: "极简", description: "只回答，不解释" },
 	{ id: "neutral", name: "中性助手", description: "最小身份" },
 ];
-const window = { PERSONAS };
+const PERSONAS_LOCAL = [
+	{ id: "terse", name: "极简·本地", description: "本地覆盖同名" },
+	{ id: "only-local", name: "仅本地", description: "不进仓库" },
+];
+const window = { PERSONAS, PERSONAS_LOCAL };
 
 const calls = [];
 let store = { persona: "terse", mode: "append", agents: ["claude"], custom: "keep" };
@@ -136,11 +140,12 @@ runInNewContext(appSrc, {
 });
 await settle();
 
-ok(nodes["now-persona"].textContent === "极简", "初始状态显示当前人设");
+ok(nodes["now-persona"].textContent === "极简·本地", "初始状态显示当前人设（本地清单覆盖同名）");
 ok(nodes.mode.value === "append", "初始模式来自 options");
 ok(nodes.agents.value === "claude", "初始 agents 显示为逗号分隔");
-ok(all(nodes.list).filter((n) => n.className === "persona" || n.className === "persona on").length === 2, "列出两个人设");
-ok(textOf(nodes.count).includes("全部 2"), "计数显示全部 2");
+ok(all(nodes.list).filter((n) => n.className === "persona" || n.className === "persona on").length === 3, "仓库清单与本地清单合并，同名不重复");
+ok(personaButton("only-local") !== undefined, "本地清单里的新人也列出来");
+ok(textOf(nodes.count).includes("全部 3"), "计数显示全部 3");
 
 // 点选另一个人设：落盘、保留 agents 与未知键
 personaButton("neutral").onclick();

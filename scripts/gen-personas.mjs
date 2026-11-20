@@ -1,7 +1,7 @@
-// 生成 page/personas.js：沙箱页读不到磁盘，也发不出 fetch，
-// 人设清单只能静态带进页面。增删人设后重跑一次：
-//   npm run gen:personas
-// 产物只属于本地；仓库里的 personas.js 是空清单。
+// 生成页面用的人设清单：沙箱页读不到磁盘，也发不出 fetch，
+// 清单只能静态带进页面。默认写 page/personas.js，它随插件一起走仓库；
+// 不想进仓库的用 `npm run gen:personas -- --local`，写 page/personas.local.js，
+// 页面会把它叠在仓库清单之上（同 id 以本地为准，已在 .gitignore 里）。
 import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { isAbsolute, join, resolve } from "node:path";
@@ -34,8 +34,13 @@ const list = readdirSync(dir)
 	})
 	.sort((a, b) => a.id.localeCompare(b.id));
 
+// 往前 ./page/personas.js 或 ./page/personas.local.js 里写
+const local = process.argv.includes("--local");
+const target = new URL(`../page/personas${local ? ".local" : ""}.js`, import.meta.url);
 writeFileSync(
-	new URL("../page/personas.js", import.meta.url),
-	`window.PERSONAS = ${JSON.stringify(list, null, "\t")};\n`,
+	target,
+	local
+		? `window.PERSONAS_LOCAL = ${JSON.stringify(list, null, "\t")};\n`
+		: `window.PERSONAS = ${JSON.stringify(list, null, "\t")};\n`,
 );
-console.log(`personas.js ← ${list.length} 个：${list.map((p) => p.id).join(", ")}`);
+console.log(`${local ? "personas.local.js" : "personas.js"} ← ${list.length} 个：${list.map((p) => p.id).join(", ")}`);

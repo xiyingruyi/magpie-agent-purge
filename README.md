@@ -17,7 +17,8 @@ magpie plugin list
 
 ```bash
 cd ~/.config/magpie/plugins/node_modules/magpie-agent-purge
-npm run gen:personas
+npm run gen:personas            # 重写 page/personas.js（随仓库走）
+npm run gen:personas -- --local # 只本机用，写 page/personas.local.js（不进仓库）
 ```
 
 装完默认是 `off`：在插件页选人设和模式，或显式写入 options。
@@ -98,7 +99,7 @@ description: 中文、先结论、修改前先读代码
 ## 边界
 
 - 只处理经过 magpie 网关的请求；直连厂商、不经过网关的流量不受影响。
-- 插件页没有文件系统和网络，人设清单靠 `gen:personas` 静态生成；导入的人设存在插件 options 里。
+- 插件页没有文件系统和网络，人设清单靠 `gen:personas` 静态生成：仓库里带一份 `page/personas.js`，本机可以再叠一份 `page/personas.local.js`（同 id 以本地为准）；导入的人设存在插件 options 里。
 - `strict` 移除的是 system 文本，不等于清空独立的结构化工具定义。
 - 请求改写在网关侧完成，无法修改客户端已经固定的行为。
 
@@ -107,7 +108,8 @@ description: 中文、先结论、修改前先读代码
 ```bash
 npm test        # node:test，四种协议 × 四种模式 + 健壮性
 npm run check   # 语法检查
-npm run gen:personas
+npm run gen:personas            # 重写 page/personas.js（随仓库走）
+npm run gen:personas -- --local # 只本机用，写 page/personas.local.js（不进仓库）
 ```
 
 不需要 magpie 就能跑 hook 测试：测试喂假的请求体和 ctx。
