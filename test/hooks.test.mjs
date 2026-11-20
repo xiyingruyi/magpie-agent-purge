@@ -277,3 +277,28 @@ describe("state.json 的停用与分家", () => {
 		assert.equal(systemOf.anthropic(body), `${PERSONA}\n\n${STRIPPED}`);
 	});
 });
+
+describe("插件自带的人设", () => {
+	it("磁盘没有该人设时用插件自带的", () => {
+		home = makeHome(); // personas/ 里只有 canary.md
+		const r = resolvePersona({ persona: "neutral" }, home, "claude");
+		assert.equal(r.source, "bundled");
+		assert.ok(r.text.length > 0);
+		assert.ok(!r.text.startsWith("---"), "frontmatter 不进 prompt");
+	});
+
+	it("磁盘上的人设压过自带的", () => {
+		home = makeHome();
+		writeFileSync(join(home, "personas", "neutral.md"), "Custom neutral body.");
+		const r = resolvePersona({ persona: "neutral" }, home, "claude");
+		assert.equal(r.source, "disk");
+		assert.equal(r.text, "Custom neutral body.");
+	});
+
+	it("谁都没有就什么都不注入", () => {
+		home = makeHome();
+		const r = resolvePersona({ persona: "nobody" }, home, "claude");
+		assert.equal(r.source, "none");
+		assert.equal(r.text, "");
+	});
+});

@@ -60,6 +60,8 @@ state.json            { "persona": "<id>",
 personas/<id>.md      frontmatter + 正文；只有正文进 prompt
 ```
 
+插件自己也带一份 `personas/`（跟 `hooks.js` 同级：`CTF`、`dafeiyu`、`neutral`、`xiaomajiang`）。查找顺序是「磁盘 → 插件自带 → 不注入」，所以换台机器装完插件就能直接用这几个人设，`~/.agent-purge/personas/<id>.md` 一旦存在就压过自带的那份。
+
 `state.json` 跟 agent-purge 是同一份，所以 CLI 那边的开关这里立刻生效。人设与模式是「全局默认 + 单个 agent 的例外」叠出来的，而三种「停」优先于任何模式：
 
 | state.json | 效果 |

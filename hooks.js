@@ -16,6 +16,7 @@
 //                           三种「停」优先于任何模式：default.mode=off（总暂停）、
 //                           overrides[agent].mode=off（这家 off）、disabledHarnesses（这家停用）
 //   personas/<id>.md        frontmatter + 正文；只有正文进 prompt
+//                           磁盘缺某个人设时用插件自带的 personas/ 兜底
 //
 // 插件 options（magpie plugin options magpie-agent-purge '<json>'）：
 //   mode            覆盖 state.json 的默认模式
@@ -27,7 +28,11 @@
 // 失败一律 fail-open：改不动就返回 undefined，让请求原样通过。
 import { readFileSync, statSync } from "node:fs";
 import { homedir } from "node:os";
-import { isAbsolute, join, resolve as resolvePath } from "node:path";
+import { dirname, isAbsolute, join, resolve as resolvePath } from "node:path";
+import { fileURLToPath } from "node:url";
+
+// 插件自带的人设目录，跟 hooks.js 同级
+const BUNDLED = join(dirname(fileURLToPath(import.meta.url)), "personas");
 
 const MODES = new Set(["off", "strict", "replace", "append"]);
 const MODE_LIST = ["strict", "replace", "append", "off"];
@@ -111,8 +116,7 @@ function activation(state, agent) {
 // 人设文件在每个请求里都可能被读；只在 mtime/size 变化时重新读盘。
 const personaCache = new Map();
 
-function readPersonaFile(home, id) {
-	const file = join(home, "personas", `${id}.md`);
+function readMdFile(file) {
 	let stat;
 	try {
 		stat = statSync(file);
@@ -130,6 +134,25 @@ function readPersonaFile(home, id) {
 	}
 	personaCache.set(file, { sig, text });
 	return text;
+}
+
+function exists(file) {
+	try {
+		statSync(file);
+		return true;
+	} catch {
+		return false;
+	}
+}
+
+// 磁盘上的人设优先；磁盘没有就用插件自带的 `personas/`（换机器、还没同步
+// ~/.agent-purge 时也能直接用）。
+function readPersonaFile(home, id) {
+	const onDisk = join(home, "personas", `${id}.md`);
+	if (exists(onDisk)) return { text: readMdFile(onDisk), source: "disk" };
+	const bundled = join(BUNDLED, `${id}.md`);
+	if (exists(bundled)) return { text: readMdFile(bundled), source: "bundled" };
+	return { text: "", source: "none" };
 }
 
 /** 决定这次请求用哪个模式、哪段人设正文。 */
@@ -152,8 +175,8 @@ export function resolvePersona(options = {}, home = purgeHome(), agent = null) {
 	);
 	if (hit) return { mode, text: stripFrontmatter(hit.text), source: "inline", blockedBy: null };
 
-	const text = readPersonaFile(home, wanted);
-	return { mode, text, source: text ? "disk" : "none", blockedBy: null };
+	const { text, source } = readPersonaFile(home, wanted);
+	return { mode, text, source: text ? source : "none", blockedBy: null };
 }
 
 // replace 只是近似：删掉「一行里同时有自称 + 点名模型/厂商」的行。
